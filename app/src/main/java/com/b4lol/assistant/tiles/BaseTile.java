@@ -40,7 +40,7 @@ public abstract class BaseTile extends TileService {
         }
         RootUtils.runAsync(() -> {
             RootUtils.CommandResult result = RootUtils.runScript(getScriptPath());
-            boolean missing = result.getExitCode() == RootUtils.MODULE_MISSING_EXIT_CODE;
+            boolean missing = RootUtils.isModuleMissing(result);
             boolean rootDenied = !result.isSuccess() && !missing && !RootUtils.hasRootAccess();
             MAIN.post(() -> {
                 running = false;

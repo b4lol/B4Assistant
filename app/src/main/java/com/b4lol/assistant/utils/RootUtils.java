@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 public final class RootUtils {
     public static final int MODULE_MISSING_EXIT_CODE = 66;
+    private static final String MODULE_MISSING_MARKER = "B4ASSISTANT_MODULE_MISSING";
     private static final long ROOT_CACHE_DURATION_MS = 60_000;
     private static final long COMMAND_TIMEOUT_SECONDS = 30;
     private static final int MAX_OUTPUT = 64 * 1024;
@@ -42,13 +43,19 @@ public final class RootUtils {
 
     public static CommandResult runScript(String path) {
         String quoted = shellQuote(path);
-        CommandResult result = runCommand("if [ ! -f " + quoted + " ]; then exit "
+        CommandResult result = runCommand("if [ ! -f " + quoted + " ]; then echo "
+                + MODULE_MISSING_MARKER + "; exit "
                 + MODULE_MISSING_EXIT_CODE + "; fi\nsh " + quoted);
-        if (result.isSuccess() || result.getExitCode() == MODULE_MISSING_EXIT_CODE) {
+        if (result.isSuccess() || isModuleMissing(result)) {
             rootCached = true;
             rootCacheTime = SystemClock.elapsedRealtime();
         }
         return result;
+    }
+
+    public static boolean isModuleMissing(CommandResult result) {
+        return result.getExitCode() == MODULE_MISSING_EXIT_CODE
+                && MODULE_MISSING_MARKER.equals(result.getOutput().trim());
     }
 
     public static CommandResult runCommand(String[] commands) {

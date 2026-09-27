@@ -32,7 +32,7 @@ public final class ScriptExecutor {
     public static void executeScript(Context context, String scriptPath, String moduleUrl, ExecutionCallback callback) {
         RootUtils.runAsync(() -> {
             RootUtils.CommandResult result = RootUtils.runScript(scriptPath);
-            if (result.getExitCode() == RootUtils.MODULE_MISSING_EXIT_CODE) {
+            if (RootUtils.isModuleMissing(result)) {
                 MAIN.post(() -> callback.onModuleMissing(moduleUrl));
             } else {
                 boolean rootDenied = !result.isSuccess() && !RootUtils.hasRootAccess();
