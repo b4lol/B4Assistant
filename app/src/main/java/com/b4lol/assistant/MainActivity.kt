@@ -2,14 +2,14 @@ package com.b4lol.assistant
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.content.res.Configuration
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -18,9 +18,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -32,19 +34,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.b4lol.assistant.utils.RootUtils
 import com.b4lol.assistant.utils.ScriptExecutor
@@ -61,13 +61,35 @@ private val shortcuts = listOf(
     Shortcut("Import HMA", "Template", R.drawable.ic_import, ScriptExecutor.SCRIPT_IMPORT_HMA, ScriptExecutor.URL_PIF),
     Shortcut("Hide Lineage", "Properties", R.drawable.ic_hide, ScriptExecutor.SCRIPT_HIDE_LINEAGE, ScriptExecutor.URL_PIF),
     Shortcut("Open WebUI", "Integrity-Box", R.drawable.ic_web, ScriptExecutor.SCRIPT_OPEN_WEBUI, ScriptExecutor.URL_PIF)
-).chunked(2)
+)
 
 private val tileHints = listOf(
     TileHint("Lock Device", R.drawable.ic_lock), TileHint("Caffeine", R.drawable.ic_coffee),
     TileHint("Screenshot", R.drawable.ic_screenshot), TileHint("Mobile Data", R.drawable.ic_mobile_data),
     TileHint("Wi-Fi", R.drawable.ic_wifi), TileHint("Private DNS", R.drawable.ic_dns)
 ).chunked(2)
+
+private val LightColors = lightColorScheme(
+    primary = Color(0xFF176B61), onPrimary = Color.White,
+    primaryContainer = Color(0xFFD5F2E9), onPrimaryContainer = Color(0xFF123E37),
+    secondaryContainer = Color(0xFFE8EFEB), onSecondaryContainer = Color(0xFF283B35),
+    background = Color(0xFFF6F8F5), onBackground = Color(0xFF17231F),
+    surface = Color.White, onSurface = Color(0xFF17231F),
+    surfaceContainerLow = Color(0xFFF0F4F0), surfaceContainerHigh = Color(0xFFE8EEEA),
+    onSurfaceVariant = Color(0xFF53625B), outlineVariant = Color(0xFFD8E3DC),
+    errorContainer = Color(0xFFFFE1DC), onErrorContainer = Color(0xFF722C24)
+)
+
+private val DarkColors = darkColorScheme(
+    primary = Color(0xFF89D9C4), onPrimary = Color(0xFF00382F),
+    primaryContainer = Color(0xFF1D5146), onPrimaryContainer = Color(0xFFBDF1E3),
+    secondaryContainer = Color(0xFF2A3C35), onSecondaryContainer = Color(0xFFD3E8DC),
+    background = Color(0xFF101916), onBackground = Color(0xFFE5EEE7),
+    surface = Color(0xFF18231E), onSurface = Color(0xFFE5EEE7),
+    surfaceContainerLow = Color(0xFF1B2821), surfaceContainerHigh = Color(0xFF29372F),
+    onSurfaceVariant = Color(0xFFAEBCB2), outlineVariant = Color(0xFF394A40),
+    errorContainer = Color(0xFF632B29), onErrorContainer = Color(0xFFFFDAD6)
+)
 
 class MainActivity : ComponentActivity() {
     private var rootGranted by mutableStateOf<Boolean?>(null)
@@ -79,16 +101,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         popupMessage = intent?.getStringExtra("meowna")
         setContent {
-            val dark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-            val scheme = remember(dark) {
-                when {
-                    Build.VERSION.SDK_INT >= 31 && dark -> dynamicDarkColorScheme(this)
-                    Build.VERSION.SDK_INT >= 31 -> dynamicLightColorScheme(this)
-                    dark -> darkColorScheme()
-                    else -> lightColorScheme()
-                }
-            }
-            MaterialTheme(colorScheme = scheme) { Screen() }
+            val dark = androidx.compose.foundation.isSystemInDarkTheme()
+            MaterialTheme(colorScheme = if (dark) DarkColors else LightColors) { Screen() }
         }
         refreshRootStatus()
     }
@@ -139,58 +153,38 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3ExpressiveApi::class)
     @Composable
     private fun Screen() {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item { Spacer(Modifier.height(8.dp)) }
-            item {
-                Column {
-                    Text("B4Assistant", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
-                    Text("Your Quick Settings toolkit", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding()) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 28.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                item { Header() }
+                item { Spacer(Modifier.height(8.dp)) }
+                item { RootStatus() }
+                item { Spacer(Modifier.height(14.dp)) }
+                item { SectionTitle("Root shortcuts", if (runningScript == null) "Module actions" else "Running action…") }
+                items(shortcuts, key = { it.script }) { shortcut ->
+                    ActionCard(shortcut, runningScript == null) { execute(shortcut) }
                 }
-            }
-            item {
-                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer), modifier = Modifier.fillMaxWidth()) {
-                    Row(Modifier.padding(24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        when (rootGranted) {
-                            null -> LoadingIndicator(modifier = Modifier.size(40.dp))
-                            true -> Icon(painterResource(R.drawable.ic_root_ok), null, Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
-                            false -> Icon(painterResource(R.drawable.ic_root_error), null, Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
-                        }
-                        Column {
-                            Text("Root access", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                            Text(when (rootGranted) { null -> "Checking…"; true -> "Ready for root actions"; false -> "Grant access to use shortcuts" }, style = MaterialTheme.typography.bodyMedium)
+                item { Spacer(Modifier.height(14.dp)) }
+                item { SectionTitle("Quick Settings", "Add these tiles from your system panel") }
+                items(tileHints, key = { it.first().title }) { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        row.forEach { hint ->
+                            TilePreview(hint, Modifier.weight(1f))
                         }
                     }
                 }
-            }
-            item { SectionTitle("Root shortcuts", if (runningScript == null) "Run supported module actions" else "Running action…") }
-            items(shortcuts, key = { it.first().title }) { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    row.forEach { shortcut ->
-                        ShortcutCard(shortcut.title, shortcut.subtitle, painterResource(shortcut.icon), Modifier.weight(1f), runningScript == null) { execute(shortcut) }
+                item { Spacer(Modifier.height(12.dp)) }
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Button(onClick = { open("https://github.com/b4lol/B4Assistant") }, modifier = Modifier.weight(1f)) { Text("Source") }
+                        OutlinedButton(onClick = { open("https://github.com/b4lol/B4Assistant/issues") }, modifier = Modifier.weight(1f)) { Text("Feedback") }
                     }
                 }
+                item { Text("Based on MeowAssistant by MeowDump", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
-            item { SectionTitle("Quick Settings tiles", "Add these from your system panel") }
-            items(tileHints, key = { it.first().title }) { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    row.forEach { hint ->
-                        ShortcutCard(hint.title, "Available as a tile", painterResource(hint.icon), Modifier.weight(1f)) {
-                            toast("Add ${hint.title} in Quick Settings")
-                        }
-                    }
-                }
-            }
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(onClick = { open("https://github.com/b4lol/B4Assistant") }, modifier = Modifier.weight(1f)) { Text("Source") }
-                    OutlinedButton(onClick = { open("https://github.com/b4lol/B4Assistant/issues") }, modifier = Modifier.weight(1f)) { Text("Feedback") }
-                }
-            }
-            item { Text("Based on MeowAssistant by MeowDump", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
         missingModule?.let { (name, url) ->
             AlertDialog(
@@ -207,20 +201,72 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    private fun Header() {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Box(Modifier.size(52.dp).background(MaterialTheme.colorScheme.primary, RoundedCornerShape(18.dp)), contentAlignment = Alignment.Center) {
+                Text("B4", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+            }
+            Column {
+                Text("B4Assistant", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                Text("Your Quick Settings toolkit", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+    @Composable
+    private fun RootStatus() {
+        val granted = rootGranted
+        val container = if (granted == false) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer
+        val foreground = if (granted == false) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer
+        Card(shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = container), modifier = Modifier.fillMaxWidth()) {
+            Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Box(Modifier.size(48.dp).background(foreground.copy(alpha = 0.12f), RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) {
+                    if (granted == null) LoadingIndicator(Modifier.size(30.dp))
+                    else Icon(painterResource(if (granted) R.drawable.ic_root_ok else R.drawable.ic_root_error), null, Modifier.size(26.dp), tint = foreground)
+                }
+                Column {
+                    Text("Root access", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = foreground)
+                    Text(when (granted) { null -> "Checking access…"; true -> "Ready for root actions"; false -> "Grant access to use shortcuts" }, style = MaterialTheme.typography.bodyMedium, color = foreground)
+                }
+            }
+        }
+    }
+
+    @Composable
     private fun SectionTitle(title: String, subtitle: String) {
-        Column {
-            Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+        Column(Modifier.padding(vertical = 4.dp)) {
+            Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 
     @Composable
-    private fun ShortcutCard(title: String, subtitle: String, icon: Painter, modifier: Modifier, enabled: Boolean = true, onClick: () -> Unit) {
-        Card(onClick = onClick, enabled = enabled, modifier = modifier.height(136.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)) {
-            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(icon, null, Modifier.size(26.dp), tint = MaterialTheme.colorScheme.primary)
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+    private fun ActionCard(shortcut: Shortcut, enabled: Boolean, onClick: () -> Unit) {
+        Card(
+            onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Box(Modifier.size(48.dp).background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) {
+                    Icon(painterResource(shortcut.icon), null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                }
+                Column(Modifier.weight(1f)) {
+                    Text(shortcut.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(shortcut.subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                Text("›", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+
+    @Composable
+    private fun TilePreview(hint: TileHint, modifier: Modifier) {
+        Card(shape = RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = modifier.height(92.dp)) {
+            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(painterResource(hint.icon), null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                Text(hint.title, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }

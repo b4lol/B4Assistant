@@ -8,7 +8,7 @@ A rooted Android Quick Settings toolkit with a Material 3 Expressive home screen
 
 - Quick Settings tiles for screenshots, Wi-Fi, mobile data, private DNS, Caffeine, and screen locking
 - Shortcuts for [QuietKill](https://github.com/MeowDump/QuietKill) and [Integrity-Box](https://github.com/MeowDump/Integrity-Box) module scripts
-- Dynamic color on Android 12 and later
+- A coordinated light and dark Material 3 Expressive palette
 - Background root commands with timeouts, bounded output, and cached root status
 
 ## Requirements
