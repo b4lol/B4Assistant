@@ -19,6 +19,6 @@ A rooted Android Quick Settings toolkit with a Material 3 Expressive home screen
 
 ## Build and install
 
-Use Android Studio with JDK 17 and Android SDK 36, or run `./gradlew assembleDebug`. The project uses Android Gradle Plugin 8.13.2, Gradle 8.13, and Compose Material 3 Expressive. CI builds debug and release variants; the debug APK is available as an artifact of a successful [Android build](https://github.com/b4lol/B4Assistant/actions/workflows/android.yml). Release builds are unsigned.
+Use Android Studio with JDK 21 and Android SDK 36, or run `./gradlew assembleDebug`. The project uses Android Gradle Plugin 8.13.2, Gradle 8.13, Java 21 and Kotlin JVM 21 targets, and Compose Material 3 Expressive. Java APIs newer than those available on the minimum Android version are not used. CI builds debug and release variants; the debug APK is available as an artifact of a successful [Android build](https://github.com/b4lol/B4Assistant/actions/workflows/android.yml). Release builds are unsigned.
 
 The package ID is `com.b4lol.assistant`, so this fork installs separately from the original app. After installation, grant root access when prompted and add the desired tiles from Android's Quick Settings editor.
