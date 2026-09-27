@@ -11,6 +11,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public final class RootUtils {
+    public static final int MODULE_MISSING_EXIT_CODE = 66;
     private static final long ROOT_CACHE_DURATION_MS = 60_000;
     private static final long COMMAND_TIMEOUT_SECONDS = 30;
     private static final int MAX_OUTPUT = 64 * 1024;
@@ -37,6 +38,17 @@ public final class RootUtils {
 
     public static CommandResult runCommand(String command) {
         return runCommand(new String[]{command});
+    }
+
+    public static CommandResult runScript(String path) {
+        String quoted = shellQuote(path);
+        CommandResult result = runCommand("if [ ! -f " + quoted + " ]; then exit "
+                + MODULE_MISSING_EXIT_CODE + "; fi\nsh " + quoted);
+        if (result.isSuccess() || result.getExitCode() == MODULE_MISSING_EXIT_CODE) {
+            rootCached = true;
+            rootCacheTime = SystemClock.elapsedRealtime();
+        }
+        return result;
     }
 
     public static CommandResult runCommand(String[] commands) {

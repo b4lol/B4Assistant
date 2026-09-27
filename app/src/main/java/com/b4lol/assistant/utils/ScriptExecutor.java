@@ -31,15 +31,14 @@ public final class ScriptExecutor {
 
     public static void executeScript(Context context, String scriptPath, String moduleUrl, ExecutionCallback callback) {
         RootUtils.runAsync(() -> {
-            if (!RootUtils.hasRootAccess()) {
-                MAIN.post(() -> callback.onError("Please grant root access"));
-            } else if (!RootUtils.fileExists(scriptPath)) {
+            RootUtils.CommandResult result = RootUtils.runScript(scriptPath);
+            if (result.getExitCode() == RootUtils.MODULE_MISSING_EXIT_CODE) {
                 MAIN.post(() -> callback.onModuleMissing(moduleUrl));
             } else {
-                RootUtils.CommandResult result = RootUtils.runCommand("sh " + RootUtils.shellQuote(scriptPath));
+                boolean rootDenied = !result.isSuccess() && !RootUtils.hasRootAccess();
                 MAIN.post(() -> {
                     if (result.isSuccess()) callback.onSuccess(result.getOutput());
-                    else callback.onError(result.getError());
+                    else callback.onError(rootDenied ? "Please grant root access" : result.getError());
                 });
             }
         });

@@ -39,19 +39,18 @@ public abstract class BaseTile extends TileService {
             tile.updateTile();
         }
         RootUtils.runAsync(() -> {
-            boolean root = RootUtils.hasRootAccess();
-            boolean exists = root && RootUtils.fileExists(getScriptPath());
-            RootUtils.CommandResult result = exists
-                    ? RootUtils.runCommand("sh " + RootUtils.shellQuote(getScriptPath())) : null;
+            RootUtils.CommandResult result = RootUtils.runScript(getScriptPath());
+            boolean missing = result.getExitCode() == RootUtils.MODULE_MISSING_EXIT_CODE;
+            boolean rootDenied = !result.isSuccess() && !missing && !RootUtils.hasRootAccess();
             MAIN.post(() -> {
                 running = false;
                 if (tile != null) {
-                    tile.setState(result != null && result.isSuccess() ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
+                    tile.setState(result.isSuccess() ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
                     tile.setLabel(label);
                     tile.updateTile();
                 }
-                if (!root) Toast.makeText(this, "Root Required", Toast.LENGTH_LONG).show();
-                else if (!exists) showModuleMissingDialog();
+                if (rootDenied) Toast.makeText(this, "Root Required", Toast.LENGTH_LONG).show();
+                else if (missing) showModuleMissingDialog();
                 else if (!result.isSuccess()) Toast.makeText(this, label + " failed", Toast.LENGTH_SHORT).show();
                 else if (tile != null) MAIN.postDelayed(() -> {
                     tile.setState(Tile.STATE_INACTIVE);

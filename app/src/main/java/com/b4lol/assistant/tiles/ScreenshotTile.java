@@ -9,47 +9,37 @@ import android.widget.Toast;
 import com.b4lol.assistant.utils.RootUtils;
 
 public class ScreenshotTile extends TileService {
-    
+    private final Handler main = new Handler(Looper.getMainLooper());
+    private boolean busy;
+
     @Override
     public void onClick() {
         super.onClick();
-        
-        if (!RootUtils.hasRootAccess()) {
-            Toast.makeText(this, "Root Required", Toast.LENGTH_LONG).show();
-            return;
-        }
-        
-        final Tile tile = getQsTile();
-        tile.setState(Tile.STATE_ACTIVE);
-        tile.updateTile();
-        
-        RootUtils.runAsync(new Runnable() {
-            public void run() {
-                RootUtils.collapseStatusBar();
-                
-                try {
-                    Thread.sleep(600);
-                } catch (InterruptedException e) {}
-                
-                RootUtils.runCommand("input keyevent 120");
-                
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                    public void run() {
-                        tile.setState(Tile.STATE_INACTIVE);
-                        tile.updateTile();
-                        Toast.makeText(ScreenshotTile.this, "Screenshot taken", Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
+        if (busy) return;
+        busy = true;
+        RootUtils.runAsync(() -> {
+            RootUtils.CommandResult result = RootUtils.runCommand("cmd statusbar collapse; sleep 0.6; input keyevent 120");
+            boolean rootDenied = !result.isSuccess() && !RootUtils.hasRootAccess();
+            main.post(() -> {
+                busy = false;
+                Tile tile = getQsTile();
+                if (tile != null) {
+                    tile.setState(Tile.STATE_INACTIVE);
+                    tile.updateTile();
+                }
+                Toast.makeText(this, result.isSuccess() ? "Screenshot taken" : rootDenied ? "Root Required" : "Screenshot failed", Toast.LENGTH_SHORT).show();
+            });
         });
     }
-    
+
     @Override
     public void onStartListening() {
         super.onStartListening();
         Tile tile = getQsTile();
-        tile.setState(Tile.STATE_INACTIVE);
-        tile.setLabel("Screenshot");
-        tile.updateTile();
+        if (tile != null) {
+            tile.setState(Tile.STATE_INACTIVE);
+            tile.setLabel("Screenshot");
+            tile.updateTile();
+        }
     }
 }

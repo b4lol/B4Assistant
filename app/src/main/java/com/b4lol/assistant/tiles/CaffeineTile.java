@@ -20,6 +20,7 @@ public class CaffeineTile extends TileService {
     private boolean isCaffeineActive = false;
     private int originalTimeout = 30000;
     private BroadcastReceiver screenOffReceiver;
+    private final Handler main = new Handler(Looper.getMainLooper());
     
     @Override
     public void onCreate() {
@@ -45,28 +46,27 @@ public class CaffeineTile extends TileService {
             } catch (Exception e) { }
         }
         if (isCaffeineActive) {
-            restoreOriginalTimeout();
+            RootUtils.runAsync(this::restoreOriginalTimeout);
         }
     }
     
     @Override
     public void onClick() {
         super.onClick();
-        
-        if (!RootUtils.hasRootAccess()) {
-            Toast.makeText(this, "Root Required", Toast.LENGTH_LONG).show();
-            return;
-        }
-        
-        RootUtils.collapseStatusBar();
-        
-        if (isCaffeineActive) {
-            stopCaffeine();
-        } else {
-            startCaffeine();
-        }
+        RootUtils.runAsync(() -> {
+            boolean root = RootUtils.hasRootAccess();
+            main.post(() -> {
+                if (!root) {
+                    Toast.makeText(this, "Root Required", Toast.LENGTH_LONG).show();
+                } else if (isCaffeineActive) {
+                    stopCaffeine();
+                } else {
+                    startCaffeine();
+                }
+            });
+        });
     }
-    
+
     private void startCaffeine() {
         RootUtils.runAsync(new Runnable() {
             public void run() {
@@ -81,7 +81,8 @@ public class CaffeineTile extends TileService {
                         originalTimeout = 30000;
                     }
                     
-                    RootUtils.runCommand("settings put system screen_off_timeout " + INFINITE_TIMEOUT);
+                    RootUtils.CommandResult applied = RootUtils.runCommand("settings put system screen_off_timeout " + INFINITE_TIMEOUT);
+                    if (!applied.isSuccess()) throw new IllegalStateException("Failed to set screen timeout");
                     isCaffeineActive = true;
                     
                     new Handler(Looper.getMainLooper()).post(new Runnable() {

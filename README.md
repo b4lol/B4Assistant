@@ -1,25 +1,24 @@
 # B4Assistant
 
-Android Quick Settings tiles and root-powered shortcuts. Forked from [MeowAssistant](https://github.com/MeowDump/MeowAssistant) under its MIT license.
+[![Android build](https://github.com/b4lol/B4Assistant/actions/workflows/android.yml/badge.svg)](https://github.com/b4lol/B4Assistant/actions/workflows/android.yml)
+
+A rooted Android Quick Settings toolkit with a Material 3 Expressive home screen. This project is a fork of [MeowAssistant](https://github.com/MeowDump/MeowAssistant), licensed under MIT.
 
 ## Features
 
-- Screenshot, Wi-Fi, mobile data, private DNS, Caffeine, and lock screen tiles
-- Script shortcuts for QuietKill and Integrity-Box modules
-- Root status and module availability checks
+- Quick Settings tiles for screenshots, Wi-Fi, mobile data, private DNS, Caffeine, and screen locking
+- Shortcuts for [QuietKill](https://github.com/MeowDump/QuietKill) and [Integrity-Box](https://github.com/MeowDump/Integrity-Box) module scripts
+- Dynamic color on Android 12 and later
+- Background root commands with timeouts, bounded output, and cached root status
 
 ## Requirements
 
-- Android 10 or newer
+- Android 10 or later
 - Root access for system actions and scripts
-- Optional [QuietKill](https://github.com/MeowDump/QuietKill) or [Integrity-Box](https://github.com/MeowDump/Integrity-Box) for their respective shortcuts
+- Optional modules for their respective shortcuts
 
-## Build
+## Build and install
 
-Use Android Studio with JDK 17 and Android SDK 36, or run `./gradlew assembleDebug`. The app uses Android Gradle Plugin 8.13.2, Gradle 8.13, and a Jetpack Compose Material 3 Expressive interface with dynamic color on Android 12+.
+Use Android Studio with JDK 17 and Android SDK 36, or run `./gradlew assembleDebug`. The project uses Android Gradle Plugin 8.13.2, Gradle 8.13, and Compose Material 3 Expressive. CI builds debug and release variants; the debug APK is available as an artifact of a successful [Android build](https://github.com/b4lol/B4Assistant/actions/workflows/android.yml). Release builds are unsigned.
 
-The package ID is `com.b4lol.assistant`, so this fork installs separately from the original app. Release builds use R8 and resource shrinking.
-
-## Install
-
-Build the APK, install it, grant root access when prompted, and add the desired tiles from Android's Quick Settings editor.
+The package ID is `com.b4lol.assistant`, so this fork installs separately from the original app. After installation, grant root access when prompted and add the desired tiles from Android's Quick Settings editor.
