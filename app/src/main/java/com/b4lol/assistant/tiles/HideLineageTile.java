@@ -1,10 +1,10 @@
-package com.meow.dump.tiles;
+package com.b4lol.assistant.tiles;
 
-public class KeyboxTile extends BaseTile {
+public class HideLineageTile extends BaseTile {
     
     @Override
     protected String getScriptPath() {
-        return "/data/adb/modules/playintegrityfix/webroot/common_scripts/key.sh";
+        return "/data/adb/modules/playintegrityfix/webroot/common_scripts/override_lineage.sh";
     }
     
     @Override
@@ -14,6 +14,6 @@ public class KeyboxTile extends BaseTile {
     
     @Override
     protected String getModuleName() {
-        return "Update Keybox";
+        return "Hide Lineage";
     }
 }

@@ -1,10 +1,10 @@
-package com.meow.dump.tiles;
+package com.b4lol.assistant.tiles;
 
-public class RefreshTargetTile extends BaseTile {
+public class PIFTile extends BaseTile {
     
     @Override
     protected String getScriptPath() {
-        return "/data/adb/modules/playintegrityfix/webroot/common_scripts/target.sh";
+        return "/data/adb/modules/playintegrityfix/action.sh";
     }
     
     @Override
@@ -14,6 +14,6 @@ public class RefreshTargetTile extends BaseTile {
     
     @Override
     protected String getModuleName() {
-        return "Refresh Target";
+        return "Play Integrity Fix";
     }
 }

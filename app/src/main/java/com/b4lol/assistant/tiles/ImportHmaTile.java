@@ -1,10 +1,10 @@
-package com.meow.dump.tiles;
+package com.b4lol.assistant.tiles;
 
-public class KillGmsTile extends BaseTile {
+public class ImportHmaTile extends BaseTile {
     
     @Override
     protected String getScriptPath() {
-        return "/data/adb/modules/playintegrityfix/webroot/common_scripts/gms.sh";
+        return "/data/adb/modules/playintegrityfix/webroot/common_scripts/hma.sh";
     }
     
     @Override
@@ -14,6 +14,6 @@ public class KillGmsTile extends BaseTile {
     
     @Override
     protected String getModuleName() {
-        return "Kill GMS";
+        return "Import HMA";
     }
 }

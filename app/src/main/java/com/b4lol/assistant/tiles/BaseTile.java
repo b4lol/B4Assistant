@@ -1,4 +1,4 @@
-package com.meow.dump.tiles;
+package com.b4lol.assistant.tiles;
 
 import android.app.AlertDialog;
 import android.content.Intent;
@@ -15,7 +15,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.meow.dump.utils.RootUtils;
+import com.b4lol.assistant.utils.RootUtils;
 
 public abstract class BaseTile extends TileService {
     
@@ -23,71 +23,53 @@ public abstract class BaseTile extends TileService {
     protected abstract String getModuleUrl();
     protected abstract String getModuleName();
     
+    private static final Handler MAIN = new Handler(Looper.getMainLooper());
+    private boolean running;
+
     @Override
     public void onClick() {
         super.onClick();
-        
-        if (!RootUtils.hasRootAccess()) {
-            Toast.makeText(this, "Root Required", Toast.LENGTH_LONG).show();
-            return;
-        }
-        
-        String scriptPath = getScriptPath();
-        
-        if (!RootUtils.fileExists(scriptPath)) {
-            showModuleMissingDialog();
-            return;
-        }
-        
-        if (!RootUtils.isExecutable(scriptPath)) {
-            RootUtils.makeExecutable(scriptPath);
-        }
-        
-        RootUtils.collapseStatusBar();
-        
+        if (running) return;
+        running = true;
         final Tile tile = getQsTile();
-        final String originalLabel = getModuleName();
-        tile.setState(Tile.STATE_UNAVAILABLE);
-        tile.setLabel("Running...");
-        tile.updateTile();
-        
-        RootUtils.runAsync(new Runnable() {
-            public void run() {
-                final RootUtils.CommandResult result = RootUtils.runCommand("sh " + getScriptPath());
-                
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                    public void run() {
-                        if (result.isSuccess()) {
-                            tile.setState(Tile.STATE_ACTIVE);
-                            tile.setLabel(originalLabel);
-                            tile.updateTile();
-                            
-                            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-                                public void run() {
-                                    tile.setState(Tile.STATE_INACTIVE);
-                                    tile.setLabel(originalLabel);
-                                    tile.updateTile();
-                                }
-                            }, 1000);
-                        } else {
-                            tile.setState(Tile.STATE_INACTIVE);
-                            tile.setLabel(originalLabel);
-                            tile.updateTile();
-                            Toast.makeText(BaseTile.this, originalLabel + " failed", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                });
-            }
+        final String label = getModuleName();
+        if (tile != null) {
+            tile.setState(Tile.STATE_UNAVAILABLE);
+            tile.setLabel("Running...");
+            tile.updateTile();
+        }
+        RootUtils.runAsync(() -> {
+            boolean root = RootUtils.hasRootAccess();
+            boolean exists = root && RootUtils.fileExists(getScriptPath());
+            RootUtils.CommandResult result = exists
+                    ? RootUtils.runCommand("sh " + RootUtils.shellQuote(getScriptPath())) : null;
+            MAIN.post(() -> {
+                running = false;
+                if (tile != null) {
+                    tile.setState(result != null && result.isSuccess() ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
+                    tile.setLabel(label);
+                    tile.updateTile();
+                }
+                if (!root) Toast.makeText(this, "Root Required", Toast.LENGTH_LONG).show();
+                else if (!exists) showModuleMissingDialog();
+                else if (!result.isSuccess()) Toast.makeText(this, label + " failed", Toast.LENGTH_SHORT).show();
+                else if (tile != null) MAIN.postDelayed(() -> {
+                    tile.setState(Tile.STATE_INACTIVE);
+                    tile.updateTile();
+                }, 1000);
+            });
         });
     }
-    
+
     @Override
     public void onStartListening() {
         super.onStartListening();
         Tile tile = getQsTile();
-        tile.setState(Tile.STATE_INACTIVE);
-        tile.setLabel(getModuleName());
-        tile.updateTile();
+        if (tile != null && !running) {
+            tile.setState(Tile.STATE_INACTIVE);
+            tile.setLabel(getModuleName());
+            tile.updateTile();
+        }
     }
     
     private void showModuleMissingDialog() {

@@ -1,4 +1,4 @@
-package com.meow.dump.tiles;
+package com.b4lol.assistant.tiles;
 
 import android.app.AlertDialog;
 import android.graphics.Color;
@@ -11,7 +11,7 @@ import android.view.Window;
 import android.widget.Button;
 import android.widget.Toast;
 
-import com.meow.dump.utils.RootUtils;
+import com.b4lol.assistant.utils.RootUtils;
 
 public class RecoveryTile extends TileService {
     

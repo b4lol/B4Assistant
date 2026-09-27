@@ -1,10 +1,10 @@
-package com.meow.dump.tiles;
+package com.b4lol.assistant.tiles;
 
-public class OpenWebuiTile extends BaseTile {
+public class KillGmsTile extends BaseTile {
     
     @Override
     protected String getScriptPath() {
-        return "/data/adb/modules/playintegrityfix/webroot/common_scripts/webui.sh";
+        return "/data/adb/modules/playintegrityfix/webroot/common_scripts/gms.sh";
     }
     
     @Override
@@ -14,6 +14,6 @@ public class OpenWebuiTile extends BaseTile {
     
     @Override
     protected String getModuleName() {
-        return "Open WebUI";
+        return "Kill GMS";
     }
 }

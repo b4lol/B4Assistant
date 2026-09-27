@@ -1,52 +1,25 @@
+# B4Assistant
 
-
-# Meow Assistant
-
-Useful Quick Settings tiles and root-powered shortcuts for Android.
-
-Built for personal use because my ROM was missing a bunch of features I use daily. Decided to share it in case someone else finds it useful too.
+Android Quick Settings tiles and root-powered shortcuts. Forked from [MeowAssistant](https://github.com/MeowDump/MeowAssistant) under its MIT license.
 
 ## Features
 
-### Quick Settings Tiles
-- Screenshot
-- Wi-Fi Toggle
-- Mobile Data Toggle
-- Caffeine Mode
-- Lock Device
-- Open WebUI
-
-### Utilities
-- Kill App
-- Kill GMS
-- Play Integrity Actions
-- Update Keybox
-- Import HMA
-- Refresh Target
-- Hide Lineage
-
-### Root Support
-- Root status detection
-- Root-powered actions and shortcuts
-
-## Why?
-
-Some ROMs don't include useful features like seperate WiFi-Mobile Data tile, Caffeine, Screenshot, Lock etc.
+- Screenshot, Wi-Fi, mobile data, private DNS, Caffeine, and lock screen tiles
+- Script shortcuts for QuietKill and Integrity-Box modules
+- Root status and module availability checks
 
 ## Requirements
 
-- Root access
-- Some features may require additional modules or configuration
+- Android 10 or newer
+- Root access for system actions and scripts
+- Optional [QuietKill](https://github.com/MeowDump/QuietKill) or [Integrity-Box](https://github.com/MeowDump/Integrity-Box) for their respective shortcuts
 
-## Installation
+## Build
 
-1. Download the latest APK from Releases.
-2. Install the app.
-3. Grant root access
-4. Add the desired tiles from the Quick Settings editor.
+Use Android Studio with JDK 17 and Android SDK 36, or run `./gradlew assembleDebug`. The app uses Android Gradle Plugin 8.13.2 and Gradle 8.13.
 
-## Screenshots
+The package ID is `com.b4lol.assistant`, so this fork installs separately from the original app. Release builds use R8 and resource shrinking.
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/MeowDump/MeowDump/main/Assets/assistant.png" width="300">
-</p>
+## Install
+
+Build the APK, install it, grant root access when prompted, and add the desired tiles from Android's Quick Settings editor.

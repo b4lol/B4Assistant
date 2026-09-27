@@ -1,11 +1,11 @@
-package com.meow.dump;
+package com.b4lol.assistant;
 
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
 
-import com.meow.dump.tiles.DnsTile;
+import com.b4lol.assistant.tiles.DnsTile;
 
 public class TilePreferencesActivity extends Activity {
 

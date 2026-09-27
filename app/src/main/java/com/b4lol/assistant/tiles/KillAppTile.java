@@ -1,4 +1,4 @@
-package com.meow.dump.tiles;
+package com.b4lol.assistant.tiles;
 
 public class KillAppTile extends BaseTile {
     

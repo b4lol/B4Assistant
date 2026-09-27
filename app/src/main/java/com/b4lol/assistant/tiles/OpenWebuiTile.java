@@ -1,10 +1,10 @@
-package com.meow.dump.tiles;
+package com.b4lol.assistant.tiles;
 
-public class ImportHmaTile extends BaseTile {
+public class OpenWebuiTile extends BaseTile {
     
     @Override
     protected String getScriptPath() {
-        return "/data/adb/modules/playintegrityfix/webroot/common_scripts/hma.sh";
+        return "/data/adb/modules/playintegrityfix/webroot/common_scripts/webui.sh";
     }
     
     @Override
@@ -14,6 +14,6 @@ public class ImportHmaTile extends BaseTile {
     
     @Override
     protected String getModuleName() {
-        return "Import HMA";
+        return "Open WebUI";
     }
 }

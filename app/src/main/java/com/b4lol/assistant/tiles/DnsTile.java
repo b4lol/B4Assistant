@@ -1,4 +1,4 @@
-package com.meow.dump.tiles;
+package com.b4lol.assistant.tiles;
 
 import android.annotation.TargetApi;
 import android.content.Intent;
@@ -10,7 +10,7 @@ import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
 import android.widget.Toast;
 
-import com.meow.dump.utils.RootUtils;
+import com.b4lol.assistant.utils.RootUtils;
 
 public class DnsTile extends TileService {
     
@@ -43,7 +43,7 @@ public class DnsTile extends TileService {
         
         RootUtils.collapseStatusBar();
         
-        new Thread(new Runnable() {
+        RootUtils.runAsync(new Runnable() {
             public void run() {
                 boolean success = false;
                 try {
@@ -81,7 +81,7 @@ public class DnsTile extends TileService {
                     }
                 });
             }
-        }).start();
+        });
     }
     
     private boolean isDnsEnabled() {

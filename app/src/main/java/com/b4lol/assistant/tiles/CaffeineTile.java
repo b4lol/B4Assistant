@@ -1,4 +1,4 @@
-package com.meow.dump.tiles;
+package com.b4lol.assistant.tiles;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -10,7 +10,7 @@ import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
 import android.widget.Toast;
 
-import com.meow.dump.utils.RootUtils;
+import com.b4lol.assistant.utils.RootUtils;
 
 public class CaffeineTile extends TileService {
     
@@ -68,7 +68,7 @@ public class CaffeineTile extends TileService {
     }
     
     private void startCaffeine() {
-        new Thread(new Runnable() {
+        RootUtils.runAsync(new Runnable() {
             public void run() {
                 try {
                     String result = RootUtils.runCommand("settings get system screen_off_timeout").getOutput().trim();
@@ -99,13 +99,13 @@ public class CaffeineTile extends TileService {
                     });
                 }
             }
-        }).start();
+        });
     }
     
     private void stopCaffeine() {
         isCaffeineActive = false;
         
-        new Thread(new Runnable() {
+        RootUtils.runAsync(new Runnable() {
             public void run() {
                 restoreOriginalTimeout();
                 
@@ -116,7 +116,7 @@ public class CaffeineTile extends TileService {
                     }
                 });
             }
-        }).start();
+        });
     }
     
     private void restoreOriginalTimeout() {

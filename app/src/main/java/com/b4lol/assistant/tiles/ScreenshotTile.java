@@ -1,21 +1,23 @@
-package com.meow.dump.tiles;
+package com.b4lol.assistant.tiles;
 
-import android.app.admin.DevicePolicyManager;
-import android.content.ComponentName;
-import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
 import android.widget.Toast;
 
-import com.meow.dump.utils.RootUtils;
+import com.b4lol.assistant.utils.RootUtils;
 
-public class LockDeviceTile extends TileService {
+public class ScreenshotTile extends TileService {
     
     @Override
     public void onClick() {
         super.onClick();
+        
+        if (!RootUtils.hasRootAccess()) {
+            Toast.makeText(this, "Root Required", Toast.LENGTH_LONG).show();
+            return;
+        }
         
         final Tile tile = getQsTile();
         tile.setState(Tile.STATE_ACTIVE);
@@ -26,15 +28,16 @@ public class LockDeviceTile extends TileService {
                 RootUtils.collapseStatusBar();
                 
                 try {
-                    Thread.sleep(300);
+                    Thread.sleep(600);
                 } catch (InterruptedException e) {}
                 
-                RootUtils.runCommand("input keyevent 26");
+                RootUtils.runCommand("input keyevent 120");
                 
                 new Handler(Looper.getMainLooper()).post(new Runnable() {
                     public void run() {
                         tile.setState(Tile.STATE_INACTIVE);
                         tile.updateTile();
+                        Toast.makeText(ScreenshotTile.this, "Screenshot taken", Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -46,7 +49,7 @@ public class LockDeviceTile extends TileService {
         super.onStartListening();
         Tile tile = getQsTile();
         tile.setState(Tile.STATE_INACTIVE);
-        tile.setLabel("Lock Device");
+        tile.setLabel("Screenshot");
         tile.updateTile();
     }
 }

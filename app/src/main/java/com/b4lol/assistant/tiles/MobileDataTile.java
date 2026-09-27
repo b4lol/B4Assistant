@@ -1,4 +1,4 @@
-package com.meow.dump.tiles;
+package com.b4lol.assistant.tiles;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -12,7 +12,7 @@ import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
 import android.widget.Toast;
 
-import com.meow.dump.utils.RootUtils;
+import com.b4lol.assistant.utils.RootUtils;
 
 import java.lang.reflect.Method;
 
@@ -44,7 +44,7 @@ public class MobileDataTile extends TileService {
         
         RootUtils.collapseStatusBar();
         
-        new Thread(new Runnable() {
+        RootUtils.runAsync(new Runnable() {
             public void run() {
                 try {
                     ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -64,7 +64,7 @@ public class MobileDataTile extends TileService {
                     }
                 });
             }
-        }).start();
+        });
     }
     
     private boolean isMobileDataEnabled() {
