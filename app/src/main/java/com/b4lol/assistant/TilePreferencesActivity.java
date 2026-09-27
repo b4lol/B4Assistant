@@ -15,8 +15,7 @@ public class TilePreferencesActivity extends Activity {
         Intent intent = getIntent();
         if (intent != null && "android.service.quicksettings.action.QS_TILE_PREFERENCES".equals(intent.getAction())) {
             ComponentName component = intent.getParcelableExtra(Intent.EXTRA_COMPONENT_NAME);
-            String className = component != null ? component.getClassName() : DnsTile.class.getName();
-            if (className.equals(DnsTile.class.getName())) {
+            if (component != null && DnsTile.class.getName().equals(component.getClassName())) {
                 try {
                     Intent targetIntent = new Intent("android.settings.PRIVATE_DNS_SETTINGS");
                     targetIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -26,9 +25,7 @@ public class TilePreferencesActivity extends Activity {
                     fallbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
                     try {
                         startActivity(fallbackIntent);
-                    } catch (Exception e2) {
-                        e2.printStackTrace();
-                    }
+                    } catch (Exception ignored) { }
                 }
             }
         }

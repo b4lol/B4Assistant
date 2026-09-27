@@ -1,61 +1,49 @@
 package com.b4lol.assistant.tiles;
 
 import android.app.AlertDialog;
+import android.app.PendingIntent;
 import android.content.Intent;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
-import android.view.Window;
-import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.b4lol.assistant.utils.RootUtils;
 
 public abstract class BaseTile extends TileService {
-    
+    private static final Handler MAIN = new Handler(Looper.getMainLooper());
+    private boolean running;
+
     protected abstract String getScriptPath();
     protected abstract String getModuleUrl();
     protected abstract String getModuleName();
-    
-    private static final Handler MAIN = new Handler(Looper.getMainLooper());
-    private boolean running;
 
     @Override
     public void onClick() {
         super.onClick();
         if (running) return;
         running = true;
-        final Tile tile = getQsTile();
-        final String label = getModuleName();
-        if (tile != null) {
-            tile.setState(Tile.STATE_UNAVAILABLE);
-            tile.setLabel("Running...");
-            tile.updateTile();
-        }
+        update(Tile.STATE_UNAVAILABLE, "Running...");
         RootUtils.runAsync(() -> {
             RootUtils.CommandResult result = RootUtils.runScript(getScriptPath());
             boolean missing = RootUtils.isModuleMissing(result);
             boolean rootDenied = !result.isSuccess() && !missing && !RootUtils.hasRootAccess();
             MAIN.post(() -> {
                 running = false;
-                if (tile != null) {
-                    tile.setState(result.isSuccess() ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
-                    tile.setLabel(label);
-                    tile.updateTile();
+                update(result.isSuccess() ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE, getModuleName());
+                if (rootDenied) {
+                    Toast.makeText(this, "Root Required", Toast.LENGTH_LONG).show();
+                } else if (missing) {
+                    if (isLocked()) unlockAndRun(this::showModuleMissingDialog);
+                    else showModuleMissingDialog();
+                } else if (!result.isSuccess()) {
+                    Toast.makeText(this, getModuleName() + " failed", Toast.LENGTH_SHORT).show();
+                } else {
+                    MAIN.postDelayed(() -> update(Tile.STATE_INACTIVE, getModuleName()), 1000);
                 }
-                if (rootDenied) Toast.makeText(this, "Root Required", Toast.LENGTH_LONG).show();
-                else if (missing) showModuleMissingDialog();
-                else if (!result.isSuccess()) Toast.makeText(this, label + " failed", Toast.LENGTH_SHORT).show();
-                else if (tile != null) MAIN.postDelayed(() -> {
-                    tile.setState(Tile.STATE_INACTIVE);
-                    tile.updateTile();
-                }, 1000);
             });
         });
     }
@@ -63,86 +51,34 @@ public abstract class BaseTile extends TileService {
     @Override
     public void onStartListening() {
         super.onStartListening();
+        if (!running) update(Tile.STATE_INACTIVE, getModuleName());
+    }
+
+    private void update(int state, String label) {
         Tile tile = getQsTile();
-        if (tile != null && !running) {
-            tile.setState(Tile.STATE_INACTIVE);
-            tile.setLabel(getModuleName());
-            tile.updateTile();
-        }
+        if (tile == null) return;
+        tile.setState(state);
+        tile.setLabel(label);
+        tile.updateTile();
     }
-    
+
     private void showModuleMissingDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog_Alert);
-        
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(dpToPx(20), dpToPx(16), dpToPx(20), dpToPx(8));
-        
-        TextView title = new TextView(this);
-        title.setText(getModuleName() + " Not Installed");
-        title.setTextColor(Color.BLACK);
-        title.setTextSize(17);
-        title.setTypeface(null, android.graphics.Typeface.BOLD);
-        title.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
-        layout.addView(title);
-        
-        TextView message = new TextView(this);
-        message.setText("The required module is not installed. Would you like to download it?");
-        message.setTextColor(Color.parseColor("#8E8E93"));
-        message.setTextSize(13);
-        message.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
-        message.setPadding(dpToPx(8), dpToPx(12), dpToPx(8), dpToPx(16));
-        layout.addView(message);
-        
-        builder.setView(layout);
-        
-        builder.setPositiveButton("Download", new android.content.DialogInterface.OnClickListener() {
-            public void onClick(android.content.DialogInterface dialog, int which) {
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(getModuleUrl()));
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivityAndCollapse(intent);
-            }
-        });
-        
-        builder.setNegativeButton("Cancel", new android.content.DialogInterface.OnClickListener() {
-            public void onClick(android.content.DialogInterface dialog, int which) {
-                dialog.dismiss();
-            }
-        });
-        
-        final AlertDialog dialog = builder.create();
-        
-        dialog.setOnShowListener(new android.content.DialogInterface.OnShowListener() {
-            public void onShow(android.content.DialogInterface d) {
-                Button positive = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-                Button negative = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
-                
-                if (positive != null) {
-                    positive.setTextColor(Color.parseColor("#007AFF"));
-                    positive.setAllCaps(false);
-                    positive.setTextSize(16);
-                }
-                if (negative != null) {
-                    negative.setTextColor(Color.parseColor("#007AFF"));
-                    negative.setAllCaps(false);
-                    negative.setTextSize(16);
-                }
-                
-                Window window = dialog.getWindow();
-                if (window != null) {
-                    android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
-                    bg.setCornerRadius(dpToPx(14));
-                    bg.setColor(Color.parseColor("#F2F2F7"));
-                    window.setBackgroundDrawable(bg);
-                }
-            }
-        });
-        
-        dialog.show();
-    }
-    
-    private int dpToPx(int dp) {
-        float density = getResources().getDisplayMetrics().density;
-        return Math.round(dp * density);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(getModuleName() + " not installed")
+                .setMessage("The required module is unavailable. Open its releases page?")
+                .setPositiveButton("Open releases", (ignored, which) -> {
+                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(getModuleUrl()));
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    if (Build.VERSION.SDK_INT >= 34) {
+                        PendingIntent pending = PendingIntent.getActivity(this, 0, intent,
+                                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+                        startActivityAndCollapse(pending);
+                    } else {
+                        startActivityAndCollapse(intent);
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .create();
+        showDialog(dialog);
     }
 }

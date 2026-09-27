@@ -1,8 +1,5 @@
 package com.b4lol.assistant.tiles;
 
-import android.app.admin.DevicePolicyManager;
-import android.content.ComponentName;
-import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.service.quicksettings.Tile;
@@ -12,39 +9,33 @@ import android.widget.Toast;
 import com.b4lol.assistant.utils.RootUtils;
 
 public class LockDeviceTile extends TileService {
-    
+    private final Handler main = new Handler(Looper.getMainLooper());
+    private boolean busy;
+
     @Override
     public void onClick() {
         super.onClick();
-        
-        final Tile tile = getQsTile();
-        tile.setState(Tile.STATE_ACTIVE);
-        tile.updateTile();
-        
-        RootUtils.runAsync(new Runnable() {
-            public void run() {
-                RootUtils.collapseStatusBar();
-                
-                try {
-                    Thread.sleep(300);
-                } catch (InterruptedException e) {}
-                
-                RootUtils.runCommand("input keyevent 26");
-                
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                    public void run() {
-                        tile.setState(Tile.STATE_INACTIVE);
-                        tile.updateTile();
-                    }
-                });
-            }
+        if (busy) return;
+        busy = true;
+        RootUtils.runAsync(() -> {
+            RootUtils.CommandResult result = RootUtils.runCommand("cmd statusbar collapse; sleep 0.3; input keyevent 26");
+            main.post(() -> {
+                busy = false;
+                update();
+                if (!result.isSuccess()) Toast.makeText(this, "Lock failed", Toast.LENGTH_SHORT).show();
+            });
         });
     }
-    
+
     @Override
     public void onStartListening() {
         super.onStartListening();
+        update();
+    }
+
+    private void update() {
         Tile tile = getQsTile();
+        if (tile == null) return;
         tile.setState(Tile.STATE_INACTIVE);
         tile.setLabel("Lock Device");
         tile.updateTile();

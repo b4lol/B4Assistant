@@ -1,11 +1,7 @@
 package com.b4lol.assistant.utils;
 
-import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
-import android.widget.Toast;
 
 public final class ScriptExecutor {
     public static final String SCRIPT_KILL_APP = "/data/adb/modules/QuiteKill/QuiteKill.sh";
@@ -29,7 +25,7 @@ public final class ScriptExecutor {
         void onModuleMissing(String moduleUrl);
     }
 
-    public static void executeScript(Context context, String scriptPath, String moduleUrl, ExecutionCallback callback) {
+    public static void executeScript(String scriptPath, String moduleUrl, ExecutionCallback callback) {
         RootUtils.runAsync(() -> {
             RootUtils.CommandResult result = RootUtils.runScript(scriptPath);
             if (RootUtils.isModuleMissing(result)) {
@@ -44,12 +40,4 @@ public final class ScriptExecutor {
         });
     }
 
-    public static void showToast(Context context, String message) {
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
-    }
-
-    public static void openUrl(Context context, String url) {
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-        context.startActivity(intent);
-    }
 }

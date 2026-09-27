@@ -9,6 +9,8 @@ import android.widget.Toast;
 import com.b4lol.assistant.utils.RootUtils;
 
 public class DnsTile extends TileService {
+    private static final String ENABLED = "B4_DNS_ON";
+    private static final String UNCONFIGURED = "B4_DNS_UNCONFIGURED";
     private final Handler main = new Handler(Looper.getMainLooper());
     private boolean busy;
 
@@ -18,39 +20,40 @@ public class DnsTile extends TileService {
         if (busy) return;
         busy = true;
         RootUtils.runAsync(() -> {
-            boolean root = RootUtils.hasRootAccess();
-            boolean enabled = root && isEnabled();
-            String specifier = root && !enabled ? RootUtils.runCommand("settings get global private_dns_specifier").getOutput().trim() : "";
-            boolean configured = enabled || (!specifier.isEmpty() && !"null".equals(specifier));
-            boolean success = root && configured && RootUtils.runCommand("settings put global private_dns_mode " + (enabled ? "off" : "hostname")).isSuccess();
+            RootUtils.CommandResult result = RootUtils.runCommand(
+                    "mode=$(settings get global private_dns_mode) || exit $?; "
+                    + "if [ \"$mode\" = hostname ]; then "
+                    + "settings put global private_dns_mode off && echo B4_DNS_OFF; "
+                    + "else provider=$(settings get global private_dns_specifier) || exit $?; "
+                    + "if [ -z \"$provider\" ] || [ \"$provider\" = null ]; then echo " + UNCONFIGURED + "; exit 67; fi; "
+                    + "settings put global private_dns_mode hostname && echo " + ENABLED + "; fi");
+            boolean unconfigured = result.getExitCode() == 67 && result.getOutput().contains(UNCONFIGURED);
+            boolean rootDenied = !result.isSuccess() && !unconfigured && !RootUtils.hasRootAccess();
             main.post(() -> {
                 busy = false;
-                if (success) updateState(!enabled);
-                else Toast.makeText(this, !root ? "Root Required" : !configured ? "No DNS provider configured" : "DNS toggle failed", Toast.LENGTH_SHORT).show();
+                if (result.isSuccess()) updateState(result.getOutput().contains(ENABLED));
+                else Toast.makeText(this, unconfigured ? "No DNS provider configured"
+                        : rootDenied ? "Root Required" : "DNS toggle failed", Toast.LENGTH_SHORT).show();
             });
         });
     }
 
-    private boolean isEnabled() {
-        RootUtils.CommandResult result = RootUtils.runCommand("settings get global private_dns_mode");
-        return result.isSuccess() && "hostname".equals(result.getOutput().trim());
-    }
-
     private void updateState(boolean enabled) {
         Tile tile = getQsTile();
-        if (tile != null) {
-            tile.setState(enabled ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
-            tile.setLabel(enabled ? "DNS ON" : "DNS");
-            tile.updateTile();
-        }
+        if (tile == null) return;
+        tile.setState(enabled ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
+        tile.setLabel(enabled ? "DNS ON" : "DNS");
+        tile.updateTile();
     }
 
     @Override
     public void onStartListening() {
         super.onStartListening();
         RootUtils.runAsync(() -> {
-            boolean enabled = isEnabled();
-            main.post(() -> updateState(enabled));
+            RootUtils.CommandResult result = RootUtils.runCommand("settings get global private_dns_mode");
+            main.post(() -> {
+                if (!busy && result.isSuccess()) updateState("hostname".equals(result.getOutput().trim()));
+            });
         });
     }
 }

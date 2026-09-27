@@ -4,6 +4,9 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.compose'
 }
 
+def releaseStoreFile = System.getenv('B4_SIGNING_STORE_FILE')
+def releaseStorePassword = System.getenv('B4_SIGNING_STORE_PASSWORD')
+
 android {
     namespace 'com.b4lol.assistant'
     compileSdk 36
@@ -12,8 +15,8 @@ android {
         applicationId 'com.b4lol.assistant'
         minSdk 29
         targetSdk 36
-        versionCode 101
-        versionName '1.1.0'
+        versionCode 102
+        versionName '1.2.0'
     }
 
     buildFeatures {
@@ -29,11 +32,26 @@ android {
         targetCompatibility JavaVersion.VERSION_21
     }
 
+    signingConfigs {
+        release {
+            if (releaseStoreFile && releaseStorePassword) {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias 'b4assistant'
+                keyPassword releaseStorePassword
+                storeType 'pkcs12'
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (releaseStoreFile && releaseStorePassword) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }

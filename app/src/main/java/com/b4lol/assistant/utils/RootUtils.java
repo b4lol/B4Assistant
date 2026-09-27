@@ -22,14 +22,14 @@ public final class RootUtils {
 
     private RootUtils() {}
 
-    public static boolean hasRootAccess() {
+    public static synchronized boolean hasRootAccess() {
         Boolean cached = rootCached;
         if (cached != null && SystemClock.elapsedRealtime() - rootCacheTime < ROOT_CACHE_DURATION_MS) {
             return cached;
         }
         boolean granted = runCommand("id -u").getOutput().trim().equals("0");
-        rootCached = granted;
         rootCacheTime = SystemClock.elapsedRealtime();
+        rootCached = granted;
         return granted;
     }
 
@@ -47,8 +47,8 @@ public final class RootUtils {
                 + MODULE_MISSING_MARKER + "; exit "
                 + MODULE_MISSING_EXIT_CODE + "; fi\nsh " + quoted);
         if (result.isSuccess() || isModuleMissing(result)) {
-            rootCached = true;
             rootCacheTime = SystemClock.elapsedRealtime();
+            rootCached = true;
         }
         return result;
     }
@@ -107,22 +107,6 @@ public final class RootUtils {
 
     public static String shellQuote(String value) {
         return "'" + value.replace("'", "'\\''") + "'";
-    }
-
-    public static boolean fileExists(String path) {
-        return runCommand("test -f " + shellQuote(path)).isSuccess();
-    }
-
-    public static boolean isExecutable(String path) {
-        return runCommand("test -x " + shellQuote(path)).isSuccess();
-    }
-
-    public static void makeExecutable(String path) {
-        runCommand("chmod +x " + shellQuote(path));
-    }
-
-    public static void collapseStatusBar() {
-        runAsync(() -> runCommand("cmd statusbar collapse"));
     }
 
     public static final class CommandResult {

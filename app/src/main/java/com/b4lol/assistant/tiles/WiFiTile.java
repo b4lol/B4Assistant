@@ -1,10 +1,8 @@
 package com.b4lol.assistant.tiles;
 
-import android.content.Intent;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.Looper;
-import android.provider.Settings;
 import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
 import android.widget.Toast;
@@ -12,64 +10,40 @@ import android.widget.Toast;
 import com.b4lol.assistant.utils.RootUtils;
 
 public class WiFiTile extends TileService {
-    
+    private final Handler main = new Handler(Looper.getMainLooper());
+    private boolean busy;
+
+    private WifiManager wifiManager() {
+        return (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
+    }
+
     @Override
     public void onClick() {
         super.onClick();
-        toggleWiFi();
-    }
-    
-    private void toggleWiFi() {
-        final WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
-        final boolean isEnabled = wifiManager.isWifiEnabled();
-        final WiFiTile context = this;
-        
-        RootUtils.collapseStatusBar();
-        
-        RootUtils.runAsync(new Runnable() {
-            public void run() {
-                boolean success = false;
-                
-                try {
-                    success = wifiManager.setWifiEnabled(!isEnabled);
-                } catch (Exception e) {
-                    success = false;
-                }
-                
-                if (!success && RootUtils.hasRootAccess()) {
-                    success = RootUtils.runCommand("svc wifi " + (isEnabled ? "disable" : "enable")).isSuccess();
-                }
-                
-                final boolean newState = !isEnabled;
-                final boolean finalSuccess = success;
-                
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                    public void run() {
-                        if (finalSuccess) {
-                            updateTileState(newState);
-                            Toast.makeText(context, "WiFi " + (newState ? "ON" : "OFF"), Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(context, "WiFi toggle failed", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                });
-            }
+        if (busy) return;
+        busy = true;
+        boolean enabled = wifiManager().isWifiEnabled();
+        RootUtils.runAsync(() -> {
+            RootUtils.CommandResult result = RootUtils.runCommand("cmd statusbar collapse; svc wifi " + (enabled ? "disable" : "enable"));
+            main.post(() -> {
+                busy = false;
+                if (!result.isSuccess()) Toast.makeText(this, "Wi-Fi toggle failed", Toast.LENGTH_SHORT).show();
+                updateState(result.isSuccess() ? !enabled : wifiManager().isWifiEnabled());
+            });
         });
     }
-    
-    private void updateTileState(boolean enabled) {
+
+    private void updateState(boolean enabled) {
         Tile tile = getQsTile();
-        if (tile != null) {
-            tile.setState(enabled ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
-            tile.setLabel("WiFi");
-            tile.updateTile();
-        }
+        if (tile == null) return;
+        tile.setState(enabled ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
+        tile.setLabel("Wi-Fi");
+        tile.updateTile();
     }
-    
+
     @Override
     public void onStartListening() {
         super.onStartListening();
-        WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
-        updateTileState(wifiManager.isWifiEnabled());
+        updateState(wifiManager().isWifiEnabled());
     }
 }
