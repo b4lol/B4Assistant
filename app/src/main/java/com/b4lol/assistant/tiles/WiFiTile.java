@@ -1,9 +1,7 @@
 package com.b4lol.assistant.tiles;
 
-import android.annotation.TargetApi;
 import android.content.Intent;
 import android.net.wifi.WifiManager;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
@@ -19,14 +17,6 @@ public class WiFiTile extends TileService {
     public void onClick() {
         super.onClick();
         toggleWiFi();
-    }
-    
-    @TargetApi(Build.VERSION_CODES.Q)
-    @Override
-    public void onLongClick() {
-        Intent intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        startActivity(intent);
     }
     
     private void toggleWiFi() {

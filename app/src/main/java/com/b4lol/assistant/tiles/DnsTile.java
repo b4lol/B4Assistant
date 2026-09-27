@@ -1,8 +1,6 @@
 package com.b4lol.assistant.tiles;
 
-import android.annotation.TargetApi;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
@@ -28,14 +26,6 @@ public class DnsTile extends TileService {
         toggleDns();
     }
     
-    
-    @TargetApi(Build.VERSION_CODES.Q)
-    @Override
-    public void onLongClick() {
-        Intent intent = new Intent("android.settings.PRIVATE_DNS_SETTINGS");
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        startActivity(intent);
-    }
     
     private void toggleDns() {
         final boolean isEnabled = isDnsEnabled();
