@@ -16,7 +16,7 @@ Android Quick Settings tiles and root-powered shortcuts. Forked from [MeowAssist
 
 ## Build
 
-Use Android Studio with JDK 17 and Android SDK 36, or run `./gradlew assembleDebug`. The app uses Android Gradle Plugin 8.13.2 and Gradle 8.13.
+Use Android Studio with JDK 17 and Android SDK 36, or run `./gradlew assembleDebug`. The app uses Android Gradle Plugin 8.13.2, Gradle 8.13, and a Jetpack Compose Material 3 Expressive interface with dynamic color on Android 12+.
 
 The package ID is `com.b4lol.assistant`, so this fork installs separately from the original app. Release builds use R8 and resource shrinking.
 
