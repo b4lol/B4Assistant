@@ -1,74 +1,40 @@
 package com.b4lol.assistant.tiles;
 
-import android.content.Context;
-import android.content.Intent;
-import android.net.ConnectivityManager;
 import android.os.Handler;
 import android.os.Looper;
-import android.provider.Settings;
 import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
 import android.widget.Toast;
 
 import com.b4lol.assistant.utils.RootUtils;
 
-import java.lang.reflect.Method;
-
 public class MobileDataTile extends TileService {
-    
+    private final Handler main = new Handler(Looper.getMainLooper());
+    private boolean busy;
+
     @Override
     public void onClick() {
         super.onClick();
-        
-        if (!RootUtils.hasRootAccess()) {
-            Toast.makeText(this, "Root Required", Toast.LENGTH_LONG).show();
-            return;
-        }
-        
-        toggleMobileData();
-    }
-    
-    private void toggleMobileData() {
-        final boolean isEnabled = isMobileDataEnabled();
-        final Context context = this;
-        
-        RootUtils.collapseStatusBar();
-        
-        RootUtils.runAsync(new Runnable() {
-            public void run() {
-                try {
-                    ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-                    Method method = cm.getClass().getDeclaredMethod("setMobileDataEnabled", boolean.class);
-                    method.setAccessible(true);
-                    method.invoke(cm, !isEnabled);
-                } catch (Exception e) {
-                    RootUtils.runCommand("svc data " + (isEnabled ? "disable" : "enable"));
-                }
-                
-                final boolean newState = !isEnabled;
-                
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                    public void run() {
-                        updateTileState(newState);
-                        Toast.makeText(context, "Mobile Data " + (newState ? "ON" : "OFF"), Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
+        if (busy) return;
+        busy = true;
+        RootUtils.runAsync(() -> {
+            boolean root = RootUtils.hasRootAccess();
+            boolean enabled = root && isEnabled();
+            boolean success = root && RootUtils.runCommand("svc data " + (enabled ? "disable" : "enable")).isSuccess();
+            main.post(() -> {
+                busy = false;
+                if (success) updateState(!enabled);
+                else Toast.makeText(this, root ? "Mobile Data toggle failed" : "Root Required", Toast.LENGTH_SHORT).show();
+            });
         });
     }
-    
-    private boolean isMobileDataEnabled() {
-        try {
-            ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-            Method method = cm.getClass().getDeclaredMethod("getMobileDataEnabled");
-            method.setAccessible(true);
-            return (Boolean) method.invoke(cm);
-        } catch (Exception e) {
-            return false;
-        }
+
+    private boolean isEnabled() {
+        RootUtils.CommandResult result = RootUtils.runCommand("settings get global mobile_data");
+        return result.isSuccess() && "1".equals(result.getOutput().trim());
     }
-    
-    private void updateTileState(boolean enabled) {
+
+    private void updateState(boolean enabled) {
         Tile tile = getQsTile();
         if (tile != null) {
             tile.setState(enabled ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
@@ -76,10 +42,13 @@ public class MobileDataTile extends TileService {
             tile.updateTile();
         }
     }
-    
+
     @Override
     public void onStartListening() {
         super.onStartListening();
-        updateTileState(isMobileDataEnabled());
+        RootUtils.runAsync(() -> {
+            boolean enabled = isEnabled();
+            main.post(() -> updateState(enabled));
+        });
     }
 }

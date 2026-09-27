@@ -37,8 +37,7 @@ public class WiFiTile extends TileService {
                 }
                 
                 if (!success && RootUtils.hasRootAccess()) {
-                    RootUtils.runCommand("svc wifi " + (isEnabled ? "disable" : "enable"));
-                    success = true;
+                    success = RootUtils.runCommand("svc wifi " + (isEnabled ? "disable" : "enable")).isSuccess();
                 }
                 
                 final boolean newState = !isEnabled;

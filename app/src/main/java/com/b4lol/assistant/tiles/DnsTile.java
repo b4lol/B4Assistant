@@ -1,9 +1,7 @@
 package com.b4lol.assistant.tiles;
 
-import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
-import android.provider.Settings;
 import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
 import android.widget.Toast;
@@ -11,100 +9,48 @@ import android.widget.Toast;
 import com.b4lol.assistant.utils.RootUtils;
 
 public class DnsTile extends TileService {
-    
-    private static final String DEFAULT_LABEL = "DNS";
-    
+    private final Handler main = new Handler(Looper.getMainLooper());
+    private boolean busy;
+
     @Override
     public void onClick() {
         super.onClick();
-        
-        if (!RootUtils.hasRootAccess()) {
-            Toast.makeText(this, "Root Required", Toast.LENGTH_LONG).show();
-            return;
-        }
-        
-        toggleDns();
-    }
-    
-    
-    private void toggleDns() {
-        final boolean isEnabled = isDnsEnabled();
-        final DnsTile context = this;
-        
-        RootUtils.collapseStatusBar();
-        
-        RootUtils.runAsync(new Runnable() {
-            public void run() {
-                boolean success = false;
-                try {
-                    if (isEnabled) {
-                        RootUtils.runCommand("settings put global private_dns_mode off");
-                    } else {
-                        String specifier = getDnsSpecifier();
-                        if (specifier != null && !specifier.isEmpty() && !specifier.equals("null")) {
-                            RootUtils.runCommand("settings put global private_dns_mode hostname");
-                        } else {
-                            new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                public void run() {
-                                    Toast.makeText(context, "No DNS provider configured", Toast.LENGTH_LONG).show();
-                                }
-                            });
-                            return;
-                        }
-                    }
-                    success = true;
-                } catch (Exception e) {
-                    success = false;
-                }
-
-                final boolean newState = !isEnabled;
-                final boolean finalSuccess = success;
-                
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                    public void run() {
-                        if (finalSuccess) {
-                            updateTileState(newState);
-                            Toast.makeText(context, "DNS " + (newState ? "ON" : "OFF"), Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(context, "DNS toggle failed", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                });
-            }
+        if (busy) return;
+        busy = true;
+        RootUtils.runAsync(() -> {
+            boolean root = RootUtils.hasRootAccess();
+            boolean enabled = root && isEnabled();
+            String specifier = root && !enabled ? RootUtils.runCommand("settings get global private_dns_specifier").getOutput().trim() : "";
+            boolean configured = enabled || (!specifier.isEmpty() && !"null".equals(specifier));
+            boolean success = root && configured && RootUtils.runCommand("settings put global private_dns_mode " + (enabled ? "off" : "hostname")).isSuccess();
+            main.post(() -> {
+                busy = false;
+                if (success) updateState(!enabled);
+                else Toast.makeText(this, !root ? "Root Required" : !configured ? "No DNS provider configured" : "DNS toggle failed", Toast.LENGTH_SHORT).show();
+            });
         });
     }
-    
-    private boolean isDnsEnabled() {
-        try {
-            RootUtils.CommandResult result = RootUtils.runCommand("settings get global private_dns_mode");
-            String mode = result.getOutput().trim();
-            return "hostname".equals(mode);
-        } catch (Exception e) {
-            return false;
-        }
+
+    private boolean isEnabled() {
+        RootUtils.CommandResult result = RootUtils.runCommand("settings get global private_dns_mode");
+        return result.isSuccess() && "hostname".equals(result.getOutput().trim());
     }
-    
-    private String getDnsSpecifier() {
-        try {
-            RootUtils.CommandResult result = RootUtils.runCommand("settings get global private_dns_specifier");
-            return result.getOutput().trim();
-        } catch (Exception e) {
-            return null;
-        }
-    }
-    
-    private void updateTileState(boolean enabled) {
+
+    private void updateState(boolean enabled) {
         Tile tile = getQsTile();
         if (tile != null) {
             tile.setState(enabled ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
-            tile.setLabel(enabled ? "DNS ON" : DEFAULT_LABEL);
+            tile.setLabel(enabled ? "DNS ON" : "DNS");
             tile.updateTile();
         }
     }
-    
+
     @Override
     public void onStartListening() {
         super.onStartListening();
-        updateTileState(isDnsEnabled());
+        RootUtils.runAsync(() -> {
+            boolean enabled = isEnabled();
+            main.post(() -> updateState(enabled));
+        });
     }
 }
